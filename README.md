@@ -1,1 +1,1 @@
-# OWASP-Juice-Shop-Backend_-Automation-_Framework
+# OWASP-Juice-Shop-Backend_Automation_Framework
