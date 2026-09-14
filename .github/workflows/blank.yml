@@ -1,0 +1,78 @@
+name: "Workflow of Juice Test Automation API Framework"
+
+on:
+  push:
+    branches: ["OWASP-juice-shop-Branch", "main"]
+
+jobs:
+  # ==========================================
+  # JOB 1: Static Analysis & Auto-PR
+  # ==========================================
+  static-analysis:
+    name: "Perform static analysis on feature branch"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run SonarQube Code Review
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          mvn clean verify sonar:sonar \
+            -Dsonar.qualitygate.wait=true
+
+      - name: Open Pull Request on Success
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create --base main --head "OWASP-juice-shop-Branch" --title "PR from OWASP-juice-shop-Branch" --body "SonarQube check passed!"
+
+      - name: Notify User on Quality Gate Failure
+        if: failure()
+        run: |
+          echo " Please check your code again! There are several code issues found by SonarQube."
+
+  # ==========================================
+  # JOB 2: Run Test Suite After Merge
+  # ==========================================
+  run-test-suite:
+    name: "Run TestNG Suite on Main"
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main Branch
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: TestNG Execution
+        run: |
+          echo "Code successfully merged into main! Running test suite..."
+          mvn clean test -DsuiteXmlFile=testng.xml
+          echo "Test suite successfully completed!"
+      
+    
+     
+     
+         
+       
+       
+    
+  
